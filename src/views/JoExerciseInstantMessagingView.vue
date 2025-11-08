@@ -14,12 +14,12 @@
         >
           <!-- 顯示發送者id -->
           <div class="text-sm mb-1 font-medium">
-            {{ uuidToAnimal  (msg.sender) }}
+            {{ uuidToAnimal(msg.sender) }}
           </div>
 
           <!-- 訊息氣泡 -->
           <div
-            :class="[ 
+            :class="[
               'inline-block px-3 py-2 rounded-lg max-w-xs break-words',
               msg.sender === userData.data.id
                 ? 'bg-primary-400 text-white'
@@ -54,6 +54,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
+// @ts-ignore - mqtt types might not be available in this environment
 import mqtt, { MqttClient } from 'mqtt';
 import BaseInput from '@/components/atoms/BaseInput.vue';
 import BaseButton from '../components/atoms/BaseButton.vue';
@@ -108,7 +109,9 @@ const props = withDefaults(
 
 // === 狀態 ===
 const textMessage = ref('');
-const messages = ref<Array<{ sender: string; text: string; timestamp?: string }>>(props.messages ?? []);
+const messages = ref<Array<{ sender: string; text: string; timestamp?: string }>>(
+  props.messages ?? []
+);
 let client: MqttClient | null = null;
 
 // === 從 URL 拿 channelId ===
@@ -164,13 +167,13 @@ onMounted(async () => {
 
   client.on('connect', () => {
     console.log('✅ MQTT Connected');
-    client?.subscribe(topic.value, (err) => {
+    client?.subscribe(topic.value, (err: any) => {
       if (err) console.error('❌ Subscribe failed', err);
       else console.log('📩 Subscribed to', topic.value);
     });
   });
 
-  client.on('message', (tpc, payload) => {
+  client.on('message', (tpc: any, payload: any) => {
     if (tpc === topic.value) {
       try {
         const msg = JSON.parse(payload.toString()) as { sender: string; text: string };
@@ -188,7 +191,7 @@ onMounted(async () => {
     }
   });
 
-  client.on('error', (err) => {
+  client.on('error', (err: any) => {
     console.error('MQTT Error:', err);
   });
 });
