@@ -76,7 +76,7 @@ const router = createRouter({
       path: '/jo-exercise',
       name: 'jo-exercise',
       meta: {
-        title: 'JoExercise 已參加活動'
+        title: 'JoExercise'
       },
       component: JoExerciseChannelListView
     },

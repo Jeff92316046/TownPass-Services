@@ -122,22 +122,44 @@
         </div>
 
         <div v-else key="joined" class="overflow-y-auto px-4 pb-20">
-          <div
+          <button
             v-for="(channel, index) in chatChannelList"
             :key="`joined-${index}`"
-            class="activity-card mb-4 p-4 flex flex-row justify-between items-center"
+            class="activity-card mb-4 p-4 flex flex-row justify-between items-center text-left w-full"
+            @click="
+              () => {
+                router.push({
+                  name: 'instant-messaging',
+                  query: { channelId: channel.channelId }
+                });
+              }
+            "
           >
             <div class="flex flex-col">
               <div class="font-semibold">{{ channel.name || 'Unnamed Channel' }}</div>
-              <div class="text-sm text-gray-600 mt-3">
+              <div class="text-sm text-gray-600 mt-3 flex flex-col">
                 運動種類: {{ channel.activityInfo.sportName }}<br />
                 地點: {{ channel.activityInfo.place }}<br />
                 時間: {{ handleTimestamp(channel.activityInfo.startTime) }} -
                 {{ handleTimestamp(channel.activityInfo.endTime) }}
+                <button
+                  class="text-red-500 text-sm w-fit mt-2"
+                  @click="
+                    // TODO: stop event propagation
+                    () => {
+                      router.push({
+                        name: 'instant-messaging',
+                        query: { channelId: channel.channelId }
+                      });
+                    }
+                  "
+                >
+                  退出
+                </button>
               </div>
             </div>
             <img :src="ChatIcon" alt="Chat Icon" class="w-20 h-20 cursor-pointer" />
-          </div>
+          </button>
         </div>
       </transition>
     </div>
@@ -189,6 +211,7 @@ import DatePicker from '@/components/molecules/DatePicker.vue';
 import HistoryIcon from '../assets/images/icon-history.svg';
 import AddIcon from '../assets/images/add-icon.svg';
 import AddIconWhite from '../assets/images/add-icon-white.svg';
+import getAllRecord from '../api/getAllRecord';
 
 const router = useRouter();
 
@@ -242,6 +265,7 @@ const placeToSports: Record<string, string[]> = {
 // 靜態資料
 const allSports = Object.keys(sportToPlaces);
 const allPlaces = Object.keys(placeToSports);
+const AllRecords = ref<any[]>([]);
 
 const selectedSport = ref('');
 const selectedPlace = ref('nearby');
@@ -254,7 +278,14 @@ const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getD
 const selectedTime = ref(localStr);
 const sportList = ref([...allSports]);
 const placeList = ref([...allPlaces]);
-const records = ref<any[]>([]);
+const records = ref<
+  Array<{
+    place: string;
+    sport: string;
+    start_time: string;
+    end_time: string;
+  }>
+>([]);
 
 const handleStartTimeEarlierThanCurrentTime = () => {
   const selected = new Date(selectedTime.value).getDate();
@@ -438,9 +469,22 @@ const handleTimestamp = (timestamp: string) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-onMounted(() => {
+onMounted(async () => {
   handlePlaceChange();
   searchRecords();
+  const params = {
+    place: selectedPlace.value,
+    sport: selectedSport.value,
+    startTime: selectedTime.value
+  };
+  const res = (await getAllRecord(params)) as any;
+  if (Array.isArray(res)) {
+    AllRecords.value = res;
+  } else if (res && Array.isArray(res.records)) {
+    AllRecords.value = res.records;
+  } else {
+    AllRecords.value = res ? [res] : [];
+  }
 });
 </script>
 
