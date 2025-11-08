@@ -31,7 +31,7 @@
                   <label class="block text-sm text-gray-700 mb-1">運動種類</label>
                   <select
                     v-model="selectedSport"
-                    @change="handleSportChange"
+                    @change="handleSportChange(selectedSport)"
                     class="w-full border rounded-lg p-2"
                   >
                     <option value="">全部</option>
@@ -46,7 +46,7 @@
                   <label class="block text-sm text-gray-700 mb-1">地點</label>
                   <select
                     v-model="selectedPlace"
-                    @change="handlePlaceChange"
+                    @change="handlePlaceChange(selectedPlace)"
                     class="w-full border rounded-lg p-2"
                   >
                     <option value="">全部</option>
@@ -255,6 +255,7 @@ import deleteJoinRecord from '../api/deleteJoinRecord';
 import deleteRecord from '../api/deleteRecord';
 import getPlaceList from '../api/getPlaceList';
 import getSportList from '../api/getSportList';
+import postNearByCompute from '../api/postNearByCompute';
 
 const router = useRouter();
 
@@ -345,12 +346,32 @@ const chatChannelList = ref<RecordInfo[]>([]);
 
 const currentTab = ref<'find' | 'joined'>('find');
 
-const handleSportChange = () => {
-  selectedPlace.value = '';
+const handleSportChange = async (sport: string) => {
+  selectedSport.value = sport;
 };
 
-const handlePlaceChange = () => {
-  selectedSport.value = '';
+const handlePlaceChange = async (place: string) => {
+  selectedPlace.value = place;
+  if (place === 'nearby') {
+    const params = {
+      latitude: 25.033,
+      longitude: 121.5654
+    };
+    const res: any = await postNearByCompute(params);
+    // Normalize different possible response shapes to a simple place name string
+    if (typeof res === 'string') {
+      selectedPlace.value = res;
+    } else if (res && typeof res.name === 'string') {
+      selectedPlace.value = res.name;
+    } else if (res && res.place && typeof res.place.name === 'string') {
+      selectedPlace.value = res.place.name;
+    } else if (res && res.records && typeof res.records.name === 'string') {
+      selectedPlace.value = res.records.name;
+    } else {
+      // Fallback: coerce to string to avoid type errors
+      selectedPlace.value = String(res ?? '');
+    }
+  }
 };
 
 const handleSwitchTab = async (tab: 'find' | 'joined') => {
