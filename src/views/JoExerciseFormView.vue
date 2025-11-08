@@ -79,11 +79,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseSelect from '@/components/atoms/BaseSelect.vue';
 import DatePicker from '@/components/molecules/DatePicker.vue';
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
+import getSportList from '../api/getSportList';
 
 const triggerValidate = ref(false);
 
@@ -94,12 +95,7 @@ const activityDate = ref(new Date().toISOString().split('T')[0]);
 const startTime = ref('');
 const endTime = ref('');
 
-const sportOptions = [
-  { label: '羽球', value: '羽球' },
-  { label: '籃球', value: '籃球' },
-  { label: '足球', value: '足球' },
-  { label: '網球', value: '網球' }
-];
+const sportOptions = ref<Array<{ label: string; value: string }>>([]);
 
 const locationOptions = [
   { label: '松山運動中心羽球場', value: '松山運動中心羽球場' },
@@ -182,4 +178,17 @@ const handleSubmit = () => {
   }
   activityDate.value = new Date().toISOString().split('T')[0];
 };
+
+onMounted(async () => {
+  try {
+    const sports = await getSportList();
+    console.log('Available sports:', sports);
+    sportOptions.value = sports.map((sport: string) => ({
+      label: sport,
+      value: sport
+    }));
+  } catch (error) {
+    console.error('Error fetching sport list:', error);
+  }
+});
 </script>
