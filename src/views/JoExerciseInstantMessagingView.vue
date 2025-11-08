@@ -1,18 +1,10 @@
 <template>
   <div class="flex flex-col h-screen">
-    <div class="bg-primary-400 p-4 text-white text-lg font-semibold h-12 flex items-center">
-      <div class="mr-4 cursor-pointer">
-        <img
-          @click="$router.back()"
-          src="../assets/images/down-icon.svg"
-          style="transform: rotate(90deg)"
-        />
-      </div>
-      <div class="text-center flex-1 text-lg font-semibold">
-        {{ props.activityName }}
-      </div>
-    </div>
-    <div class="flex-1 bg-gray-50 p-4 overflow-y-auto">
+    <FixedTitleSection
+      :title="props.activityName"
+      class="bg-primary-400 text-white text-lg font-semibold py-2"
+    />
+    <div class="flex-1 bg-gray-50 p-4 overflow-y-auto mt-12">
       <div v-for="(msg, index) in messages" :key="index" class="mb-2">
         <div
           class="flex items-start"
@@ -81,6 +73,7 @@
 import { ref } from 'vue';
 import BaseInput from '@/components/atoms/BaseInput.vue';
 import BaseButton from '../components/atoms/BaseButton.vue';
+import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
 
 const textMessage = ref('');
 
@@ -146,7 +139,15 @@ const props = withDefaults(
       { sender: 'user1', text: '您好，請問你們到了嗎？', timestamp: '2025-11-08T08:30:00Z' },
       { sender: 'Wesley', text: '您好，我們剛到達羽球場入口。', timestamp: '2025-11-08T08:31:00Z' },
       { sender: 'user2', text: '好的，我們馬上出來接你們。', timestamp: '2025-11-08T08:32:00Z' },
-      { sender: 'Wesley', text: '謝謝！我們會在入口等你們。', timestamp: '2025-11-08T08:33:00Z' }
+      { sender: 'Wesley', text: '謝謝！我們會在入口等你們。', timestamp: '2025-11-08T08:33:00Z' },
+      { sender: 'user1', text: '請問需要什麼幫助嗎？', timestamp: '2025-11-08T08:34:00Z' },
+      {
+        sender: 'Wesley',
+        text: '不需要，謝謝！我們已經看到你們了。',
+        timestamp: '2025-11-08T08:35:00Z'
+      },
+      { sender: 'user2', text: '太好了，運動愉快！', timestamp: '2025-11-08T08:36:00Z' },
+      { sender: 'Wesley', text: '謝謝！', timestamp: '2025-11-08T08:37:00Z' }
     ],
     userData: () => ({
       name: 'TP_SUCCESS',

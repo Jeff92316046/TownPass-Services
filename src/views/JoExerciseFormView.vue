@@ -1,12 +1,10 @@
 <template>
   <div class="flex flex-col h-screen bg-gray-50">
-    <div class="bg-primary-400 p-4 text-white text-lg font-semibold h-12 flex items-center">
-      <div class="mr-4 cursor-pointer">
-        <img @click="$router.back()" src="../assets/images/down-icon.svg" class="rotate-90" />
-      </div>
-      <div class="flex-1 text-center text-lg font-semibold">發起活動</div>
-    </div>
-    <form class="flex-1 overflow-auto p-4 space-y-4 flex flex-col">
+    <FixedTitleSection
+      title="發起活動"
+      class="bg-primary-400 text-white text-lg font-semibold py-2"
+    />
+    <form class="flex-1 overflow-auto p-4 space-y-4 flex flex-col mt-12">
       <label class="font-semibold">運動種類</label>
       <BaseSelect
         v-model="sportType"
@@ -85,6 +83,7 @@ import { ref } from 'vue';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseSelect from '@/components/atoms/BaseSelect.vue';
 import DatePicker from '@/components/molecules/DatePicker.vue';
+import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
 
 const triggerValidate = ref(false);
 

@@ -48,6 +48,7 @@ import FeePaymentFinishedView from '@/views/FeePaymentFinishedView.vue';
 
 import JoExerciseInstantMessagingView from '../views/JoExerciseInstantMessagingView.vue';
 import JoExerciseFormView from '../views/JoExerciseFormView.vue';
+import JoExerciseChannelListView from '../views/JoExerciseView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -70,6 +71,14 @@ const router = createRouter({
         title: 'JoExercise 表單'
       },
       component: JoExerciseFormView
+    },
+    {
+      path: '/jo-exercise',
+      name: 'jo-exercise',
+      meta: {
+        title: 'JoExercise 已參加活動'
+      },
+      component: JoExerciseChannelListView
     },
     {
       path: '/jo-exercise/instant-messaging/:channelID',
