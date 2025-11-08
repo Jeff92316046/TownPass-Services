@@ -35,7 +35,7 @@
                     class="w-full border rounded-lg p-2"
                   >
                     <option value="">全部</option>
-                    <option v-for="sport in sportList" :key="sport" :value="sport">
+                    <option v-for="(sport, index) in allSports" :key="index" :value="sport">
                       {{ sport }}
                     </option>
                   </select>
@@ -51,7 +51,7 @@
                   >
                     <option value="">全部</option>
                     <option value="nearby">最近的場所</option>
-                    <option v-for="place in placeList" :key="place" :value="place">
+                    <option v-for="(place, index) in allPlaces" :key="index" :value="place">
                       {{ place }}
                     </option>
                   </select>
@@ -253,6 +253,8 @@ import getUserRecord from '../api/getUserRecord';
 import postJoinRecord from '../api/postJoinRecord';
 import deleteJoinRecord from '../api/deleteJoinRecord';
 import deleteRecord from '../api/deleteRecord';
+import getPlaceList from '../api/getPlaceList';
+import getSportList from '../api/getSportList';
 
 const router = useRouter();
 
@@ -293,23 +295,19 @@ interface RecordInfo {
     organizerId: string;
   };
 }
-const sportToPlaces: Record<string, string[]> = {
-  籃球: ['大安運動中心', '中正紀念堂'],
-  羽球: ['內湖體育館', '中正紀念堂'],
-  足球: ['信義運動場', '大安運動中心'],
-  網球: ['內湖體育館']
-};
-
-const placeToSports: Record<string, string[]> = {
-  大安運動中心: ['籃球', '足球'],
-  內湖體育館: ['羽球', '網球'],
-  中正紀念堂: ['籃球', '羽球'],
-  信義運動場: ['足球']
-};
 
 // 靜態資料
-const allSports = Object.keys(sportToPlaces);
-const allPlaces = Object.keys(placeToSports);
+const allSports = ref<
+  Array<{
+    sport: string;
+  }>
+>([]);
+const allPlaces = ref<
+  Array<{
+    placeId: number;
+    name: string;
+  }>
+>([]);
 const AllRecords = ref<RecordInfo[]>([]);
 
 const selectedSport = ref('');
@@ -321,35 +319,12 @@ const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getD
 )}:${pad(now.getMinutes())}`;
 
 const selectedTime = ref(localStr);
-const sportList = ref([...allSports]);
-const placeList = ref([...allPlaces]);
 const records = ref<RecordInfo[]>([]);
 
 const handleStartTimeEarlierThanCurrentTime = () => {
   const selected = new Date(selectedTime.value).getDate();
   const currentTime = new Date().getDate();
   return selected < currentTime;
-};
-
-// 地點與運動交叉過濾
-const handleSportChange = () => {
-  if (!selectedSport.value) {
-    placeList.value = [...allPlaces];
-    return;
-  }
-  placeList.value = sportToPlaces[selectedSport.value] || [];
-};
-
-const handlePlaceChange = () => {
-  if (selectedPlace.value === 'nearby') {
-    // 模擬最近地點
-    selectedPlace.value = '大安運動中心';
-  }
-  if (!selectedPlace.value) {
-    sportList.value = [...allSports];
-    return;
-  }
-  sportList.value = placeToSports[selectedPlace.value] || [];
 };
 
 // 🔍 搜尋
@@ -369,6 +344,14 @@ const searchRecords = () => {
 const chatChannelList = ref<RecordInfo[]>([]);
 
 const currentTab = ref<'find' | 'joined'>('find');
+
+const handleSportChange = () => {
+  selectedPlace.value = '';
+};
+
+const handlePlaceChange = () => {
+  selectedSport.value = '';
+};
 
 const handleSwitchTab = async (tab: 'find' | 'joined') => {
   currentTab.value = tab;
@@ -400,7 +383,17 @@ const handleTimestamp = (timestamp: string) => {
 };
 
 onMounted(async () => {
-  handlePlaceChange();
+  // Normalize getPlaceList response to always be an array to match `allPlaces` type
+  const placeRes = (await getPlaceList({ sport: selectedSport.value })) as any;
+  if (Array.isArray(placeRes)) {
+    allPlaces.value = placeRes;
+  } else if (placeRes && Array.isArray(placeRes.records)) {
+    allPlaces.value = placeRes.records;
+  } else {
+    allPlaces.value = placeRes ? [placeRes] : [];
+  }
+
+  allSports.value = (await getSportList()) as any;
   searchRecords();
   const params = {
     place: selectedPlace.value,
