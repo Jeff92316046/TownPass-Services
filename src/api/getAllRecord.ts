@@ -6,7 +6,7 @@ interface AllRecordRequest {
 
 interface RecordResponse {
   records: Array<{
-    id: string;
+    recordId: string;
     place: {
       placeId: number;
       name: string;

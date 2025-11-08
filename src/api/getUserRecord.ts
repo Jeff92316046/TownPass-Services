@@ -4,7 +4,7 @@ interface UserRecordRequest {
 
 interface UserRecordResponse {
   records: Array<{
-    id: string;
+    recordId: string;
     place: {
       placeId: number;
       name: string;
@@ -25,7 +25,8 @@ const getUserRecord = async (params: UserRecordRequest): Promise<UserRecordRespo
     const requestOptions: RequestInit = {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: params.userId
       }
     };
     const response = await fetch(

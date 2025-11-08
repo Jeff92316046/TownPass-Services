@@ -97,12 +97,28 @@
               :key="`find-${index}`"
               class="activity-card mb-4 p-4 bg-white rounded-2xl shadow"
             >
-              <div class="font-semibold">{{ record.sport }}</div>
-              <div class="text-sm text-gray-600 mt-3">
-                運動種類: {{ record.sport }}<br />
-                地點: {{ record.place }}<br />
-                時間: {{ handleTimestamp(record.start_time) }} -
-                {{ handleTimestamp(record.end_time) }}
+              <div class="font-semibold">{{ record.records.sport }}</div>
+              <div class="text-sm text-gray-600 mt-3 flex flex-col">
+                運動種類: {{ record.records.sport }}<br />
+                地點: {{ record.records.place }}<br />
+                時間: {{ handleTimestamp(record.records.startTime) }} -
+                {{ handleTimestamp(record.records.endTime) }}
+                <button
+                  v-if="
+                    chatChannelList.every(
+                      (channel) => channel.records.recordId !== record.records.recordId
+                    )
+                  "
+                  class="text-red-500 text-sm w-fit mt-2"
+                  @click="
+                    // TODO: stop event propagation
+                    () => {
+                      handlePostJoinRecord(record.records.recordId);
+                    }
+                  "
+                >
+                  加入活動
+                </button>
               </div>
             </div>
           </div>
@@ -130,27 +146,32 @@
               () => {
                 router.push({
                   name: 'instant-messaging',
-                  query: { channelId: channel.channelId }
+                  query: { channelID: channel.records.recordId }
                 });
               }
             "
           >
             <div class="flex flex-col">
-              <div class="font-semibold">{{ channel.name || 'Unnamed Channel' }}</div>
+              <div class="font-semibold">
+                {{
+                  new Date(channel.records.startTime).getDate() + channel.records.place.name ||
+                  'Unnamed Channel'
+                }}
+              </div>
               <div class="text-sm text-gray-600 mt-3 flex flex-col">
-                運動種類: {{ channel.activityInfo.sportName }}<br />
-                地點: {{ channel.activityInfo.place }}<br />
-                時間: {{ handleTimestamp(channel.activityInfo.startTime) }} -
-                {{ handleTimestamp(channel.activityInfo.endTime) }}
+                運動種類: {{ channel.records.sport }}<br />
+                地點: {{ channel.records.place.name }}<br />
+                時間: {{ handleTimestamp(channel.records.startTime) }} -
+                {{ handleTimestamp(channel.records.endTime) }}
                 <button
                   class="text-red-500 text-sm w-fit mt-2"
                   @click="
-                    // TODO: stop event propagation
-                    () => {
-                      router.push({
-                        name: 'instant-messaging',
-                        query: { channelId: channel.channelId }
-                      });
+                    async () => {
+                      const params = {
+                        userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+                        recordId: channel.records.recordId
+                      };
+                      await deleteJoinRecord(params);
                     }
                   "
                 >
@@ -213,6 +234,8 @@ import AddIcon from '../assets/images/add-icon.svg';
 import AddIconWhite from '../assets/images/add-icon-white.svg';
 import getAllRecord from '../api/getAllRecord';
 import getUserRecord from '../api/getUserRecord';
+import postJoinRecord from '../api/postJoinRecord';
+import deleteJoinRecord from '../api/deleteJoinRecord';
 
 const router = useRouter();
 
@@ -238,15 +261,19 @@ const tabs = [
   }
 ];
 
-interface ChatChannelInfo {
-  id: number;
-  channelId: string;
-  name?: string; // hash name
-  activityInfo: {
-    sportName: string;
-    place: string;
+interface RecordInfo {
+  records: {
+    recordId: string;
+    place: {
+      placeId: number;
+      name: string;
+    };
+    sport: string;
     startTime: string;
     endTime: string;
+    capacity: number;
+    status: string;
+    organizerId: string;
   };
 }
 const sportToPlaces: Record<string, string[]> = {
@@ -266,7 +293,7 @@ const placeToSports: Record<string, string[]> = {
 // 靜態資料
 const allSports = Object.keys(sportToPlaces);
 const allPlaces = Object.keys(placeToSports);
-const AllRecords = ref<any[]>([]);
+const AllRecords = ref<RecordInfo[]>([]);
 
 const selectedSport = ref('');
 const selectedPlace = ref('nearby');
@@ -279,14 +306,7 @@ const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getD
 const selectedTime = ref(localStr);
 const sportList = ref([...allSports]);
 const placeList = ref([...allPlaces]);
-const records = ref<
-  Array<{
-    place: string;
-    sport: string;
-    start_time: string;
-    end_time: string;
-  }>
->([]);
+const records = ref<RecordInfo[]>([]);
 
 const handleStartTimeEarlierThanCurrentTime = () => {
   const selected = new Date(selectedTime.value).getDate();
@@ -317,148 +337,26 @@ const handlePlaceChange = () => {
 
 // 🔍 搜尋
 const searchRecords = () => {
-  const allRecords = [
-    {
-      place: '大安運動中心',
-      sport: '籃球',
-      start_time: '2025-11-08T10:00',
-      end_time: '2025-11-08T12:00'
-    },
-    {
-      place: '內湖體育館',
-      sport: '羽球',
-      start_time: '2025-11-09T14:00',
-      end_time: '2025-11-09T16:00'
-    },
-    {
-      place: '信義運動場',
-      sport: '足球',
-      start_time: '2025-11-10T09:00',
-      end_time: '2025-11-10T11:00'
-    },
-    {
-      place: '中正紀念堂',
-      sport: '籃球',
-      start_time: '2025-11-11T15:00',
-      end_time: '2025-11-11T17:00'
-    },
-    {
-      place: '內湖體育館',
-      sport: '網球',
-      start_time: '2025-11-12T13:00',
-      end_time: '2025-11-12T15:00'
-    },
-    {
-      place: '大安運動中心',
-      sport: '足球',
-      start_time: '2025-11-13T08:00',
-      end_time: '2025-11-13T10:00'
-    },
-    {
-      place: '中正紀念堂',
-      sport: '羽球',
-      start_time: '2025-11-14T17:00',
-      end_time: '2025-11-14T19:00'
-    },
-    {
-      place: '信義運動場',
-      sport: '足球',
-      start_time: '2025-11-15T11:00',
-      end_time: '2025-11-15T13:00'
-    },
-    {
-      place: '大安運動中心',
-      sport: '籃球',
-      start_time: '2025-11-16T16:00',
-      end_time: '2025-11-16T18:00'
-    },
-    {
-      place: '內湖體育館',
-      sport: '網球',
-      start_time: '2025-11-17T12:00',
-      end_time: '2025-11-17T14:00'
-    },
-    {
-      place: '中正紀念堂',
-      sport: '羽球',
-      start_time: '2025-11-18T09:00',
-      end_time: '2025-11-18T11:00'
-    },
-    {
-      place: '信義運動場',
-      sport: '足球',
-      start_time: '2025-11-19T14:00',
-      end_time: '2025-11-19T16:00'
-    },
-    {
-      place: '大安運動中心',
-      sport: '籃球',
-      start_time: '2025-11-20T10:00',
-      end_time: '2025-11-20T12:00'
-    }
-  ];
+  const allRecords = AllRecords.value;
+  const recordInfos = allRecords;
 
-  records.value = allRecords.filter((record) => {
-    const matchSport = !selectedSport.value || record.sport === selectedSport.value;
-    const matchPlace = !selectedPlace.value || record.place === selectedPlace.value;
+  records.value = recordInfos.filter((r) => {
+    const matchSport = !selectedSport.value || r.records.sport === selectedSport.value;
+    const matchPlace = !selectedPlace.value || r.records.place.name === selectedPlace.value;
     const matchTime =
-      !selectedTime.value || new Date(record.start_time) >= new Date(selectedTime.value);
+      !selectedTime.value || new Date(r.records.startTime) >= new Date(selectedTime.value);
     return matchSport && matchPlace && matchTime;
   });
 };
-const chatChannelList = ref<ChatChannelInfo[]>([
-  {
-    id: 1,
-    channelId: 'channel_001',
-    name: 'Morning Joggers',
-    activityInfo: {
-      sportName: 'jogging',
-      place: 'Central Park',
-      startTime: '2024-06-01T06:00:00Z',
-      endTime: '2024-06-01T07:00:00Z'
-    }
-  },
-  {
-    id: 2,
-    channelId: 'channel_002',
-    name: 'Evening Walkers',
-    activityInfo: {
-      sportName: 'walking',
-      place: 'Riverside',
-      startTime: '2024-06-01T18:00:00Z',
-      endTime: '2024-06-01T19:00:00Z'
-    }
-  },
-  {
-    id: 3,
-    channelId: 'channel_003',
-    name: 'Yoga Enthusiasts',
-    activityInfo: {
-      sportName: 'Yoga',
-      place: 'Beachside',
-      startTime: '2024-06-01T17:00:00Z',
-      endTime: '2024-06-01T18:00:00Z'
-    }
-  },
-  {
-    id: 4,
-    channelId: 'channel_004',
-    name: 'Cycling Group',
-    activityInfo: {
-      sportName: 'cycling',
-      place: 'Downtown',
-      startTime: '2024-06-01T08:00:00Z',
-      endTime: '2024-06-01T10:00:00Z'
-    }
-  }
-]);
+
+const chatChannelList = ref<RecordInfo[]>([]);
 
 const currentTab = ref<'find' | 'joined'>('find');
 
 const handleSwitchTab = async (tab: 'find' | 'joined') => {
   currentTab.value = tab;
   if (tab === 'joined') {
-    // normalize various response shapes from getUserRecord to an array of ChatChannelInfo
+    // normalize various response shapes from getUserRecord to an array of RecordInfo
     const params = {
       userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
     };
@@ -501,6 +399,28 @@ onMounted(async () => {
     AllRecords.value = res ? [res] : [];
   }
 });
+
+const handlePostJoinRecord = async (recordId: string) => {
+  try {
+    await postJoinRecord({
+      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+      recordId: recordId
+    });
+    console.log('Successfully joined record:', recordId);
+    const res = (await getUserRecord({
+      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
+    })) as any;
+    if (Array.isArray(res)) {
+      chatChannelList.value = res;
+    } else if (res && Array.isArray(res.records)) {
+      chatChannelList.value = res.records;
+    } else {
+      chatChannelList.value = res ? [res] : [];
+    }
+  } catch (error) {
+    console.error('Error joining record:', error);
+  }
+};
 </script>
 
 <style lang="postcss" scoped>

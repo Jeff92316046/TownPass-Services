@@ -17,7 +17,8 @@ const postRecord = async (data: postRecordRequest): Promise<postRecordResponse> 
     const response = await fetch(`${import.meta.env.VITE_BASE_URL}/record`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: data.userId
       },
       body: JSON.stringify(data)
     });
