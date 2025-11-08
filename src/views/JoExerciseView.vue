@@ -163,20 +163,36 @@
                 地點: {{ channel.records.place.name }}<br />
                 時間: {{ handleTimestamp(channel.records.startTime) }} -
                 {{ handleTimestamp(channel.records.endTime) }}
-                <button
-                  class="text-red-500 text-sm w-fit mt-2"
-                  @click="
-                    async () => {
-                      const params = {
-                        userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-                        recordId: channel.records.recordId
-                      };
-                      await deleteJoinRecord(params);
-                    }
-                  "
-                >
-                  退出
-                </button>
+                <div>
+                  <button
+                    class="text-red-500 text-sm w-fit mt-2"
+                    @click="
+                      async () => {
+                        const params = {
+                          userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+                          recordId: channel.records.recordId
+                        };
+                        await deleteJoinRecord(params);
+                      }
+                    "
+                  >
+                    退出
+                  </button>
+                  <button
+                    v-if="channel.records.organizerId === '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'"
+                    class="text-white bg-primary-700 text-sm w-fit mt-2"
+                    @click="
+                      async () => {
+                        const params = {
+                          recordId: channel.records.recordId
+                        };
+                        await deleteRecord(params);
+                      }
+                    "
+                  >
+                    解散
+                  </button>
+                </div>
               </div>
             </div>
             <img :src="ChatIcon" alt="Chat Icon" class="w-20 h-20 cursor-pointer" />
@@ -236,6 +252,7 @@ import getAllRecord from '../api/getAllRecord';
 import getUserRecord from '../api/getUserRecord';
 import postJoinRecord from '../api/postJoinRecord';
 import deleteJoinRecord from '../api/deleteJoinRecord';
+import deleteRecord from '../api/deleteRecord';
 
 const router = useRouter();
 
