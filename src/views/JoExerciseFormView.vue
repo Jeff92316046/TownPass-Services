@@ -15,7 +15,7 @@
       <div v-if="sportType !== ''" class="flex flex-col gap-4">
         <label class="font-semibold">場地訊息</label>
         <BaseSelect
-          v-model="location"
+          v-model="location as string"
           required
           :trigger-validate="triggerValidate"
           :options="locationOptions"
@@ -85,31 +85,32 @@ import BaseSelect from '@/components/atoms/BaseSelect.vue';
 import DatePicker from '@/components/molecules/DatePicker.vue';
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
 import getSportList from '../api/getSportList';
+import postRecord from '../api/postRecord';
 
 const triggerValidate = ref(false);
 
 const sportType = ref('');
-const location = ref('');
-const participants = ref('');
+const location = ref<string>('');
+const participants = ref<string>('');
 const activityDate = ref(new Date().toISOString().split('T')[0]);
 const startTime = ref('');
 const endTime = ref('');
 
 const sportOptions = ref<Array<{ label: string; value: string }>>([]);
 
-const locationOptions = [
-  { label: '松山運動中心羽球場', value: '松山運動中心羽球場' },
-  { label: '大安運動中心羽球場', value: '大安運動中心羽球場' },
-  { label: '信義運動中心羽球場', value: '信義運動中心羽球場' }
-];
+const locationOptions = ref<Array<{ label: string; value: string }>>([
+  { label: 'Taipei Arena', value: '1' },
+  { label: 'Daan Forest Park', value: '2' },
+  { label: 'Xinyi Sports Center', value: '3' },
+  { label: 'Riverside Park', value: '4' }
+]);
 
-const participantsOptions = [
-  { label: '2人', value: '2' },
-  { label: '4人', value: '4' },
-  { label: '6人', value: '6' },
-  { label: '8人', value: '8' },
-  { label: '10人', value: '10' }
-];
+const participantsOptions = ref<Array<{ label: string; value: string }>>(
+  Array.from({ length: 20 }, (_, i) => ({
+    label: (i + 1).toString(),
+    value: (i + 1).toString()
+  }))
+);
 
 const timeOptions = Array.from({ length: 17 }, (_, i) => {
   const hour = (6 + i).toString().padStart(2, '0');
@@ -158,15 +159,20 @@ const handleSubmit = () => {
       alert('開始時間不可早於目前時間');
       return;
     }
-    // TODO: Submit form data to backend or perform desired action
-    console.log(
-      `已發起活動：
-運動種類：${sportType.value}
-場地：${location.value}
-人數：${participants.value}
-日期：${activityDate.value}
-時間：${startTime.value} - ${endTime.value}`
-    );
+    postRecord({
+      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+      placeId: parseInt(location.value),
+      sport: sportType.value,
+      startTime: `${activityDate.value}T${startTime.value}:00`,
+      endTime: `${activityDate.value}T${endTime.value}:00`,
+      capacity: parseInt(participants.value)
+    })
+      .then((response) => {
+        console.log('Record posted successfully:', response);
+      })
+      .catch((error) => {
+        console.error('Error posting record:', error);
+      });
 
     sportType.value = '';
     location.value = '';
