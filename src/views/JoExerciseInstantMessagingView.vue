@@ -4,93 +4,69 @@
       :title="props.activityName"
       class="bg-primary-400 text-white text-lg font-semibold py-2"
     />
+
+    <!-- 訊息列表 -->
     <div class="flex-1 bg-gray-50 p-4 overflow-y-auto mt-12">
       <div v-for="(msg, index) in messages" :key="index" class="mb-2">
         <div
-          class="flex items-start"
-          :class="msg.sender === userData.data.username ? 'justify-end' : 'justify-start'"
+          class="flex flex-col"
+          :class="msg.sender === userData.data.id ? 'items-end' : 'items-start'"
         >
-          <div class="flex flex-col">
-            <div
-              v-if="msg.sender !== userData.data.username"
-              :class="
-                msg.sender === userData.data.username
-                  ? 'text-right justify-end'
-                  : 'text-left justify-start'
-              "
-              class="text-sm mb-1 font-medium flex items-center gap-2"
-            >
-              <img
-                :src="
-                  otherUserData.find((user) => user.name === msg.sender)?.imageUrl ||
-                  'https://picsum.photos/200'
-                "
-                :alt="`${msg.sender} Avatar`"
-                class="w-8 h-8 rounded-full"
-              />
+          <!-- 顯示發送者id -->
+          <div class="text-sm mb-1 font-medium">
+            {{ uuidToAnimal  (msg.sender) }}
+          </div>
 
-              {{ msg.sender }}
-            </div>
-            <div
-              :class="[
-                'inline-block px-3 py-2 rounded-lg max-w-xs',
-                msg.sender === userData.data.username
-                  ? 'bg-primary-400 text-white self-end ml-auto'
-                  : 'bg-gray-200 text-black self-start'
-              ]"
-            >
-              {{ msg.text }}
-            </div>
-            <div
-              v-if="msg.timestamp"
-              :class="
-                msg.sender === userData.data.username
-                  ? 'text-right justify-end'
-                  : 'text-left justify-start'
-              "
-              class="text-xs text-gray-500 mt-1"
-            >
-              {{ handleTimestamp(msg.timestamp) }}
-            </div>
+          <!-- 訊息氣泡 -->
+          <div
+            :class="[ 
+              'inline-block px-3 py-2 rounded-lg max-w-xs break-words',
+              msg.sender === userData.data.id
+                ? 'bg-primary-400 text-white'
+                : 'bg-gray-200 text-black'
+            ]"
+          >
+            {{ msg.text }}
+          </div>
+
+          <!-- 顯示時間 -->
+          <div v-if="msg.timestamp" class="text-xs text-gray-500 mt-1">
+            {{ handleTimestamp(msg.timestamp) }}
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 輸入區 -->
     <div class="p-4 flex justify-end bg-primary-50">
       <BaseInput
         placeholder="Type your message..."
         class="flex-1 mr-4 bg-transparent"
         v-model="textMessage"
       />
-      <BaseButton variant="primary" class="p-1 w-fit h-fit text-bold" @click="handleSendMessage"
-        >></BaseButton
-      >
+      <BaseButton variant="primary" class="p-1 w-fit h-fit text-bold" @click="handleSendMessage">
+        >
+      </BaseButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import mqtt, { MqttClient } from 'mqtt';
 import BaseInput from '@/components/atoms/BaseInput.vue';
 import BaseButton from '../components/atoms/BaseButton.vue';
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
+import { uuidToAnimal } from '@/utils/userid-to-name';
+import axios from 'axios';
+// === 環境變數 ===
+const MQTT_BROKER: string = import.meta.env.VITE_MQTT_BROKER;
+const MQTT_WS_PORT: number = 9001;
+const MQTT_USR_NAME: string = import.meta.env.VITE_MQTT_USR_NAME;
+const MQTT_USR_PWD: string = import.meta.env.VITE_MQTT_USR_PWD;
 
-const textMessage = ref('');
-
-const handleSendMessage = () => {
-  if (textMessage.value.trim() === '') return;
-
-  try {
-    // postMessage logic here
-    // getAllMessage again after sending message
-    console.log('Message sent:', textMessage.value);
-  } catch (error) {
-    console.error('Error sending message:', error);
-  }
-
-  textMessage.value = '';
-};
-
+// === Props ===
 const props = withDefaults(
   defineProps<{
     activityName: string;
@@ -104,101 +80,138 @@ const props = withDefaults(
         account: string;
         username: string;
         realName: string;
-        idNo: string;
-        email: string;
-        phoneNo: string;
-        birthday: string;
-        memberType: string;
-        verifyLevel: string;
-        addresses: Array<{
-          zip3: number;
-          city: string;
-          town: string;
-          village: string;
-          street: string;
-          usageType: string;
-          seq: number;
-          priority: boolean;
-        }>;
-        residentAddress: string;
-        citizen: boolean;
-        nativePeople: boolean;
-        cityInternetUid: string;
       };
       extra: null | any;
       version: string;
     };
-    otherUserData: {
-      name: string;
-      imageUrl: string;
-    }[];
+    otherUserData: { name: string; imageUrl: string }[];
   }>(),
   {
     activityName: '2025-11-08 羽球場',
-    messages: () => [
-      { sender: 'user1', text: '您好，請問你們到了嗎？', timestamp: '2025-11-08T08:30:00Z' },
-      { sender: 'Wesley', text: '您好，我們剛到達羽球場入口。', timestamp: '2025-11-08T08:31:00Z' },
-      { sender: 'user2', text: '好的，我們馬上出來接你們。', timestamp: '2025-11-08T08:32:00Z' },
-      { sender: 'Wesley', text: '謝謝！我們會在入口等你們。', timestamp: '2025-11-08T08:33:00Z' },
-      { sender: 'user1', text: '請問需要什麼幫助嗎？', timestamp: '2025-11-08T08:34:00Z' },
-      {
-        sender: 'Wesley',
-        text: '不需要，謝謝！我們已經看到你們了。',
-        timestamp: '2025-11-08T08:35:00Z'
-      },
-      { sender: 'user2', text: '太好了，運動愉快！', timestamp: '2025-11-08T08:36:00Z' },
-      { sender: 'Wesley', text: '謝謝！', timestamp: '2025-11-08T08:37:00Z' }
-    ],
+    messages: () => [],
     userData: () => ({
       name: 'TP_SUCCESS',
       status: 0,
-      reasonPhrase: 'Indicates the successful completion of an operation',
+      reasonPhrase: '',
       data: {
-        id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-        account: 'wz7786',
+        id: 'a1b2c3d4-e5f6-7890-1234-567890bc1345',
+        account: 'user1',
         username: 'Wesley',
-        realName: '金大森',
-        idNo: 'A123456789',
-        email: 'ist83903@bcaoo.com',
-        phoneNo: '0932166777',
-        birthday: '1988/12/12',
-        memberType: 'personal',
-        verifyLevel: '3',
-        addresses: [
-          {
-            zip3: 104,
-            city: '臺北市',
-            town: '中山區',
-            village: '正得里',
-            street: '吉林路',
-            usageType: '0',
-            seq: 1,
-            priority: true
-          }
-        ],
-        residentAddress: '臺北市中山區吉林路 69 號 4 樓',
-        citizen: true,
-        nativePeople: false,
-        cityInternetUid: ''
+        realName: '金大森'
       },
       extra: null,
-      version: 'v1.0.9'
+      version: 'v1.0.0'
     }),
-    otherUserData: () => [
-      {
-        name: 'user1',
-        imageUrl: 'https://picsum.photos/id/1/200/200'
-      },
-      {
-        name: 'user2',
-        imageUrl: 'https://picsum.photos/id/2/200/200'
-      }
-    ]
+    otherUserData: () => []
   }
 );
 
+// === 狀態 ===
+const textMessage = ref('');
+const messages = ref<Array<{ sender: string; text: string; timestamp?: string }>>(props.messages ?? []);
+let client: MqttClient | null = null;
+
+// === 從 URL 拿 channelId ===
+const route = useRoute();
+const channelId = ref<string>('');
+onMounted(() => {
+  channelId.value = route.params.channelID as string;
+});
+
+// === 格式化時間 ===
 const handleTimestamp = (timestamp: string) => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+// === API 取得歷史訊息 ===
+const fetchMessageHistory = async () => {
+  if (!channelId.value) return;
+
+  try {
+    const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/message/history/`, {
+      params: { channel_id: channelId.value }
+    });
+
+    const data = res.data; // [{ sender, text, timestamp }, ...]
+    messages.value = data.map((msg: any) => ({
+      sender: msg.sender,
+      text: msg.text ?? msg.message_content,
+      timestamp: msg.timestamp
+    }));
+  } catch (e: any) {
+    console.error('Failed to fetch message history:', e?.response?.data || e.message);
+  }
+};
+// === MQTT topic ===
+const topic = computed(() => `TownPass/${channelId.value}`);
+
+// === MQTT 連線與訂閱 ===
+onMounted(async () => {
+  // 1️⃣ 先取得歷史訊息
+  await fetchMessageHistory();
+
+  // 2️⃣ MQTT 連線
+  const connectUrl = `ws://${MQTT_BROKER}:${MQTT_WS_PORT}`;
+
+  client = mqtt.connect(connectUrl, {
+    username: MQTT_USR_NAME,
+    password: MQTT_USR_PWD,
+    reconnectPeriod: 2000,
+    clean: true,
+    connectTimeout: 5000
+  });
+
+  client.on('connect', () => {
+    console.log('✅ MQTT Connected');
+    client?.subscribe(topic.value, (err) => {
+      if (err) console.error('❌ Subscribe failed', err);
+      else console.log('📩 Subscribed to', topic.value);
+    });
+  });
+
+  client.on('message', (tpc, payload) => {
+    if (tpc === topic.value) {
+      try {
+        const msg = JSON.parse(payload.toString()) as { sender: string; text: string };
+
+        // 過濾掉自己發送的訊息
+        if (msg.sender === props.userData.data.id) return;
+
+        messages.value.push({
+          ...msg,
+          timestamp: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('Error parsing MQTT message:', e);
+      }
+    }
+  });
+
+  client.on('error', (err) => {
+    console.error('MQTT Error:', err);
+  });
+});
+
+// === 卸載時斷開 MQTT ===
+onUnmounted(() => {
+  client?.end(true);
+});
+
+// === 傳送訊息 ===
+const handleSendMessage = () => {
+  if (!textMessage.value.trim() || !client?.connected || !channelId.value) return;
+
+  const msg = {
+    sender: props.userData.data.id,
+    text: textMessage.value
+  };
+
+  client.publish(`TownPass/${channelId.value}`, JSON.stringify(msg));
+  messages.value.push({
+    ...msg,
+    timestamp: new Date().toISOString()
+  });
+  textMessage.value = '';
 };
 </script>
