@@ -187,9 +187,9 @@ const handleSubmit = () => {
 
 onMounted(async () => {
   try {
-    const sports = await getSportList();
-    console.log('Available sports:', sports);
-    sportOptions.value = sports.map((sport: string) => ({
+    const response = await getSportList();
+    const sportList: string[] = Array.isArray(response) ? response : [];
+    sportOptions.value = sportList.map((sport) => ({
       label: sport,
       value: sport
     }));

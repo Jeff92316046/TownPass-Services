@@ -1,4 +1,8 @@
-const getSportList = async () => {
+interface SportList {
+  sports: string[];
+}
+
+const getSportList = async (): Promise<SportList> => {
   try {
     const response = await fetch(`${import.meta.env.VITE_BASE_URL}/list/sports`, {
       method: 'GET',
