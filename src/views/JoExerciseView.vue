@@ -147,7 +147,15 @@
         v-for="tab in tabs"
         :key="tab.value"
         :class="[currentTab === tab.value ? 'current-button' : 'other-button']"
-        @click="handleSwitchTab(tab.value as 'find' | 'joined')"
+        @click="
+          () => {
+            if (tab.value === 'create' && tab.url) {
+              router.push(tab.url);
+            } else {
+              handleSwitchTab(tab.value as 'find' | 'joined');
+            }
+          }
+        "
       >
         <img
           :src="currentTab === tab.value ? tab.iconActive : tab.icon"
@@ -168,6 +176,7 @@
 <script setup lang="ts">
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import searchIconDark from '../assets/images/search-icon-dark.svg';
 import searchIcon from '../assets/images/search-icon.svg';
 import calendarIcon from '../assets/images/calendar-icon.svg';
@@ -178,8 +187,19 @@ import MessageModal from '@/components/molecules/MessageModal.vue';
 import filterIconWhite from '../assets/images/icon-filter-white.svg';
 import DatePicker from '@/components/molecules/DatePicker.vue';
 import HistoryIcon from '../assets/images/icon-history.svg';
+import AddIcon from '../assets/images/add-icon.svg';
+import AddIconWhite from '../assets/images/add-icon-white.svg';
+
+const router = useRouter();
 
 const tabs = [
+  {
+    label: '發起活動',
+    value: 'create',
+    icon: AddIcon,
+    iconActive: AddIconWhite,
+    url: '/jo-exercise/form'
+  },
   {
     label: '尋找活動',
     value: 'find',
