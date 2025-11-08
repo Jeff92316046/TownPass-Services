@@ -5,22 +5,82 @@
       class="bg-primary-400 text-white text-lg font-semibold py-2"
     />
     <div class="flex-1 bg-gray-50 mt-12">
-      <div class="banner">
-        <img
-          :src="currentTab === 'find' ? joBanner : joBanner2"
-          alt="Jo Exercise Banner"
-          class="w-full h-[200px] object-cover"
-        />
+      <div class="banner" v-if="currentTab !== 'find'">
+        <img :src="joBanner2" alt="Jo Exercise Banner" class="w-full h-[200px] object-cover" />
       </div>
       <transition name="fade" mode="out-in">
         <div v-if="currentTab === 'find'" key="find" class="overflow-y-auto px-4 pb-20">
-          <div
-            v-for="(channel, index) in chatChannelList"
-            :key="`find-${index}`"
-            class="activity-card mb-4 p-4"
-          >
-            <!-- ErEr TODO -->
+          <!-- 🔍 搜尋區塊 -->
+          <div class="bg-white rounded-2xl p-4 shadow mb-6 mt-4">
+            <h2 class="font-bold text-lg mb-3">查詢活動</h2>
+
+            <!-- 橫向搜尋列 -->
+            <div class="flex flex-wrap items-end gap-3">
+              <!-- 運動種類 -->
+              <div class="flex-1 min-w-[140px]">
+                <label class="block text-sm text-gray-700 mb-1">運動種類</label>
+                <select
+                  v-model="selectedSport"
+                  @change="handleSportChange"
+                  class="w-full border rounded-lg p-2"
+                >
+                  <option value="">全部</option>
+                  <option v-for="sport in sportList" :key="sport" :value="sport">
+                    {{ sport }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- 地點 -->
+              <div class="flex-1 min-w-[140px]">
+                <label class="block text-sm text-gray-700 mb-1">地點</label>
+                <select
+                  v-model="selectedPlace"
+                  @change="handlePlaceChange"
+                  class="w-full border rounded-lg p-2"
+                >
+                  <option value="">全部</option>
+                  <option value="nearby">最近的場所</option>
+                  <option v-for="place in placeList" :key="place" :value="place">
+                    {{ place }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- 時間 -->
+              <div class="flex-1 min-w-[160px]">
+                <label class="block text-sm text-gray-700 mb-1">開始時間之後</label>
+                <input
+                  type="datetime-local"
+                  v-model="selectedTime"
+                  class="w-full border rounded-lg p-2"
+                />
+              </div>
+
+              <!-- 查詢 icon 按鈕 -->
+              <button class="search-button" @click="searchRecords">
+              <img src="@/assets/images/search-icon.svg" alt="搜尋" />
+            </button>
+            </div>
           </div>
+
+          <!-- 📋 查詢結果 -->
+          <div v-if="records.length">
+            <div
+              v-for="(record, index) in records"
+              :key="`find-${index}`"
+              class="activity-card mb-4 p-4 bg-white rounded-2xl shadow"
+            >
+              <div class="font-semibold">{{ record.sport }}</div>
+              <div class="text-sm text-gray-600 mt-3">
+                運動種類: {{ record.sport }}<br />
+                地點: {{ record.place }}<br />
+                時間: {{ handleTimestamp(record.start_time) }} -
+                {{ handleTimestamp(record.end_time) }}
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center text-gray-500">尚無資料</div>
         </div>
 
         <div v-else key="joined" class="overflow-y-auto px-4 pb-20">
@@ -104,7 +164,84 @@ interface ChatChannelInfo {
     endTime: string;
   };
 }
+const sportToPlaces: Record<string, string[]> = {
+  籃球: ['大安運動中心', '中正紀念堂'],
+  羽球: ['內湖體育館', '中正紀念堂'],
+  足球: ['信義運動場', '大安運動中心'],
+  網球: ['內湖體育館']
+};
 
+const placeToSports: Record<string, string[]> = {
+  大安運動中心: ['籃球', '足球'],
+  內湖體育館: ['羽球', '網球'],
+  中正紀念堂: ['籃球', '羽球'],
+  信義運動場: ['足球']
+};
+
+// 靜態資料
+const allSports = Object.keys(sportToPlaces);
+const allPlaces = Object.keys(placeToSports);
+
+// 綁定狀態
+const selectedSport = ref('');
+const selectedPlace = ref('');
+const selectedTime = ref(''); // 時間篩選
+const sportList = ref([...allSports]);
+const placeList = ref([...allPlaces]);
+const records = ref<any[]>([]);
+
+// 地點與運動交叉過濾
+const handleSportChange = () => {
+  if (!selectedSport.value) {
+    placeList.value = [...allPlaces];
+    return;
+  }
+  placeList.value = sportToPlaces[selectedSport.value] || [];
+};
+
+const handlePlaceChange = () => {
+  if (selectedPlace.value === 'nearby') {
+    // 模擬最近地點
+    selectedPlace.value = '大安運動中心';
+  }
+  if (!selectedPlace.value) {
+    sportList.value = [...allSports];
+    return;
+  }
+  sportList.value = placeToSports[selectedPlace.value] || [];
+};
+
+// 🔍 搜尋
+const searchRecords = () => {
+  const allRecords = [
+    {
+      place: '大安運動中心',
+      sport: '籃球',
+      start_time: '2025-11-08T10:00',
+      end_time: '2025-11-08T12:00'
+    },
+    {
+      place: '內湖體育館',
+      sport: '羽球',
+      start_time: '2025-11-09T14:00',
+      end_time: '2025-11-09T16:00'
+    },
+    {
+      place: '信義運動場',
+      sport: '足球',
+      start_time: '2025-11-10T09:00',
+      end_time: '2025-11-10T11:00'
+    }
+  ];
+
+  records.value = allRecords.filter((record) => {
+    const matchSport = !selectedSport.value || record.sport === selectedSport.value;
+    const matchPlace = !selectedPlace.value || record.place === selectedPlace.value;
+    const matchTime =
+      !selectedTime.value || new Date(record.start_time) >= new Date(selectedTime.value);
+    return matchSport && matchPlace && matchTime;
+  });
+};
 const chatChannelList = ref<ChatChannelInfo[]>([
   {
     id: 1,
