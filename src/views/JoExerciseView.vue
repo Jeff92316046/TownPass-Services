@@ -212,6 +212,7 @@ import HistoryIcon from '../assets/images/icon-history.svg';
 import AddIcon from '../assets/images/add-icon.svg';
 import AddIconWhite from '../assets/images/add-icon-white.svg';
 import getAllRecord from '../api/getAllRecord';
+import getUserRecord from '../api/getUserRecord';
 
 const router = useRouter();
 
@@ -454,8 +455,22 @@ const chatChannelList = ref<ChatChannelInfo[]>([
 
 const currentTab = ref<'find' | 'joined'>('find');
 
-const handleSwitchTab = (tab: 'find' | 'joined') => {
+const handleSwitchTab = async (tab: 'find' | 'joined') => {
   currentTab.value = tab;
+  if (tab === 'joined') {
+    // normalize various response shapes from getUserRecord to an array of ChatChannelInfo
+    const params = {
+      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
+    };
+    const res = (await getUserRecord(params)) as any;
+    if (Array.isArray(res)) {
+      chatChannelList.value = res;
+    } else if (res && Array.isArray(res.records)) {
+      chatChannelList.value = res.records;
+    } else {
+      chatChannelList.value = res ? [res] : [];
+    }
+  }
 };
 
 const isSearchDialogOpen = ref(false);
