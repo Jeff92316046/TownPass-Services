@@ -46,6 +46,8 @@ import FeePaymentScanView from '@/views/FeePaymentScanView.vue';
 import FeePaymentStepView from '@/views/FeePaymentStepView.vue';
 import FeePaymentFinishedView from '@/views/FeePaymentFinishedView.vue';
 
+import JoExerciseInstantMessagingView from '../views/JoExerciseInstantMessagingView.vue';
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior() {
@@ -59,6 +61,14 @@ const router = createRouter({
         title: '申辦服務'
       },
       component: HomeView
+    },
+    {
+      path: '/jo-exercise/instant-messaging/:channelID',
+      name: 'instant-messaging',
+      meta: {
+        title: 'JoExercise 即時通訊'
+      },
+      component: JoExerciseInstantMessagingView
     },
     {
       path: '/form/:id',
