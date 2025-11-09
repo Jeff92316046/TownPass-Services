@@ -15,11 +15,11 @@
       <div v-if="sportType !== ''" class="flex flex-col gap-4">
         <label class="font-semibold">場地訊息</label>
         <BaseSelect
-          v-model="location"
+          v-model="selectedLocation"
           required
           :trigger-validate="triggerValidate"
           :options="locationOptions"
-          selectId="location"
+          selectId="selectedLocation"
           defaultSelected="請選擇場地訊息"
         />
         <label class="font-semibold">活動人數</label>
@@ -79,41 +79,49 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseSelect from '@/components/atoms/BaseSelect.vue';
 import DatePicker from '@/components/molecules/DatePicker.vue';
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
+import getSportList from '../api/getSportList';
+import postRecord from '../api/postRecord';
+import getPlaceList from '@/api/getPlaceList';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const triggerValidate = ref(false);
 
 const sportType = ref('');
-const location = ref('');
-const participants = ref('');
-const activityDate = ref(new Date().toISOString().split('T')[0]);
-const startTime = ref('');
-const endTime = ref('');
+const selectedLocation = ref<string>('');
+const participants = ref<string>('');
 
-const sportOptions = [
-  { label: '羽球', value: '羽球' },
-  { label: '籃球', value: '籃球' },
-  { label: '足球', value: '足球' },
-  { label: '網球', value: '網球' }
-];
+const now = new Date();
+const pad = (n: number) => n.toString().padStart(2, '0');
+const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(
+  now.getHours()
+)}:${pad(now.getMinutes())}`;
 
-const locationOptions = [
-  { label: '松山運動中心羽球場', value: '松山運動中心羽球場' },
-  { label: '大安運動中心羽球場', value: '大安運動中心羽球場' },
-  { label: '信義運動中心羽球場', value: '信義運動中心羽球場' }
-];
+const activityDate = ref(localStr.split('T')[0]);
+const startTime = ref(localStr.split('T')[1]);
+const endTime = ref(localStr.split('T')[1]);
 
-const participantsOptions = [
-  { label: '2人', value: '2' },
-  { label: '4人', value: '4' },
-  { label: '6人', value: '6' },
-  { label: '8人', value: '8' },
-  { label: '10人', value: '10' }
-];
+const sportOptions = ref<Array<{ label: string; value: string }>>([]);
+
+const locationOptions = ref<Array<{ label: string; value: string }>>([
+  { label: 'Taipei Arena', value: '1' },
+  { label: 'Daan Forest Park', value: '2' },
+  { label: 'Xinyi Sports Center', value: '3' },
+  { label: 'Riverside Park', value: '4' }
+]);
+
+const participantsOptions = ref<Array<{ label: string; value: string }>>(
+  Array.from({ length: 11 }, (_, i) => ({
+    label: (i + 2).toString(),
+    value: (i + 2).toString()
+  }))
+);
 
 const timeOptions = Array.from({ length: 17 }, (_, i) => {
   const hour = (6 + i).toString().padStart(2, '0');
@@ -141,12 +149,46 @@ const isStartTimeEarlierThanCurrentTime = () => {
   return activityDateTime < now;
 };
 
-const handleSubmit = () => {
+watch(sportType, async (newSportType) => {
+  if (newSportType !== '') {
+    const response = (await getPlaceList({ sport: newSportType })) as {
+      places: Array<{
+        place_id: string;
+        name: string;
+      }>;
+    };
+    console.log('Fetched place list for sport type:', newSportType, response);
+    locationOptions.value = response.places.map((place) => {
+      console.log('Processing place:', place);
+      return {
+        label: place.name,
+        value: place.place_id
+      };
+    });
+    console.log('Updated location options:', locationOptions.value);
+    selectedLocation.value = '';
+  }
+});
+
+watch(selectedLocation, (newLocation, oldLocation) => {
+  console.log('Selected Location changed:', oldLocation);
+  console.log('New Location value:', newLocation);
+});
+
+const handleSubmit = async () => {
   triggerValidate.value = true;
+  console.log('Submitting with values:', {
+    sportType: sportType.value,
+    location: selectedLocation.value,
+    participants: participants.value,
+    activityDate: activityDate.value,
+    startTime: startTime.value,
+    endTime: endTime.value
+  });
 
   if (
     sportType.value &&
-    location.value &&
+    selectedLocation.value &&
     participants.value &&
     activityDate.value &&
     startTime.value &&
@@ -162,24 +204,41 @@ const handleSubmit = () => {
       alert('開始時間不可早於目前時間');
       return;
     }
-    // TODO: Submit form data to backend or perform desired action
-    console.log(
-      `已發起活動：
-運動種類：${sportType.value}
-場地：${location.value}
-人數：${participants.value}
-日期：${activityDate.value}
-時間：${startTime.value} - ${endTime.value}`
-    );
-
-    sportType.value = '';
-    location.value = '';
-    participants.value = '';
-    activityDate.value = '';
-    startTime.value = '';
-    endTime.value = '';
-    triggerValidate.value = false;
+    try {
+      await postRecord({
+        user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+        place_id: selectedLocation.value,
+        sport: sportType.value,
+        start_time: `${activityDate.value}T${startTime.value}:00`,
+        end_time: `${activityDate.value}T${endTime.value}:00`,
+        capacity: parseInt(participants.value)
+      })
+        .then((response) => {
+          console.log('Record posted successfully:', response);
+        })
+        .catch((error) => {
+          console.error('Error posting record:', error);
+        });
+    } catch (error) {
+      console.error('Unexpected error posting record:', error);
+    }
   }
-  activityDate.value = new Date().toISOString().split('T')[0];
+  activityDate.value = localStr.split('T')[0];
+  router.push('/jo-exercise');
 };
+
+onMounted(async () => {
+  try {
+    const response = await getSportList();
+    console.log('Fetched sport list:', response);
+    const sportList = response.sports;
+    console.log('Processed sport list:', sportList);
+    sportOptions.value = sportList.map((sport) => ({
+      label: sport,
+      value: sport
+    }));
+  } catch (error) {
+    console.error('Error fetching sport list:', error);
+  }
+});
 </script>

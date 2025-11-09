@@ -76,12 +76,12 @@ const router = createRouter({
       path: '/jo-exercise',
       name: 'jo-exercise',
       meta: {
-        title: 'JoExercise 已參加活動'
+        title: 'JoExercise'
       },
       component: JoExerciseChannelListView
     },
     {
-      path: '/jo-exercise/instant-messaging/:channelID',
+      path: '/jo-exercise/instant-messaging/:channel_id',
       name: 'instant-messaging',
       meta: {
         title: 'JoExercise 即時通訊'
