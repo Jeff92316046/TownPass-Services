@@ -1,6 +1,6 @@
 interface JoinRecordRequest {
-  userId: string;
-  recordId: string;
+  user_id: string;
+  record_id: string;
 }
 
 interface JoinRecordResponse {
@@ -11,12 +11,12 @@ interface JoinRecordResponse {
 const postJoinRecord = async (params: JoinRecordRequest): Promise<JoinRecordResponse> => {
   try {
     const response = await fetch(
-      import.meta.env.VITE_BASE_URL + '/record/join/' + params.recordId,
+      import.meta.env.VITE_BASE_URL + '/record/join/' + params.record_id,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: params.userId
+          Authorization: 'Bearer ' + params.user_id
         },
         body: JSON.stringify(params)
       }

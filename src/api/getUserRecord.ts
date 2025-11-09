@@ -1,20 +1,20 @@
 interface UserRecordRequest {
-  userId: string;
+  user_id: string;
 }
 
 interface UserRecordResponse {
   records: Array<{
-    recordId: string;
+    record_id: string;
     place: {
-      placeId: number;
+      place_id: number;
       name: string;
     };
     sport: string;
-    startTime: string;
-    endTime: string;
+    start_time: string;
+    end_time: string;
     capacity: number;
     status: string;
-    organizerId: string;
+    organizer_id: string;
   }>[];
 }
 
@@ -24,11 +24,11 @@ const getUserRecord = async (params: UserRecordRequest): Promise<UserRecordRespo
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + params.userId
+        Authorization: 'Bearer ' + params.user_id
       }
     };
     const response = await fetch(
-      import.meta.env.VITE_BASE_URL + `/record/get/` + params.userId,
+      import.meta.env.VITE_BASE_URL + `/record/get/` + params.user_id,
       requestOptions
     );
     console.log('Response received:', response);

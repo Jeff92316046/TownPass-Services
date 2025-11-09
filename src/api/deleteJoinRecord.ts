@@ -17,7 +17,7 @@ const deleteJoinRecord = async (
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: request.userId
+          Authorization: 'Bearer ' + request.userId
         }
       }
     );

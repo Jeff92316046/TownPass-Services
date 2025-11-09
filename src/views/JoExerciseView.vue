@@ -161,7 +161,7 @@
                     @click="
                       async () => {
                         const params = {
-                          recordId: channel.record_id
+                          record_id: channel.record_id
                         };
                         await deleteRecord(params);
                       }
@@ -387,7 +387,7 @@ const handleSwitchTab = async (tab: 'find' | 'joined') => {
   currentTab.value = tab;
   if (tab === 'joined') {
     const params = {
-      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
+      user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
     };
     const res = (await getUserRecord(params)) as any;
     if (Array.isArray(res)) {
@@ -448,12 +448,12 @@ onMounted(async () => {
 const handlePostJoinRecord = async (recordId: string) => {
   try {
     await postJoinRecord({
-      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-      recordId: recordId
+      user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+      record_id: recordId
     });
     console.log('Successfully joined record:', recordId);
     const res = (await getUserRecord({
-      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
+      user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
     })) as any;
     if (Array.isArray(res)) {
       chatChannelList.value = res;

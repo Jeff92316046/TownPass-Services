@@ -1,5 +1,5 @@
 interface DeleteRecordRequest {
-  recordId: string;
+  record_id: string;
 }
 
 interface DeleteRecordResponse {
@@ -9,12 +9,12 @@ interface DeleteRecordResponse {
 const deleteRecord = async (params: DeleteRecordRequest): Promise<DeleteRecordResponse> => {
   try {
     const response = await fetch(
-      import.meta.env.VITE_BASE_URL + '/record/delete/' + params.recordId,
+      import.meta.env.VITE_BASE_URL + '/record/delete/' + params.record_id,
       {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + params.recordId
+          Authorization: 'Bearer ' + params.record_id
         }
       }
     );
