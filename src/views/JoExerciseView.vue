@@ -51,8 +51,12 @@
                   >
                     <option value="">全部</option>
                     <option value="nearby">最近的場所</option>
-                    <option v-for="(place, index) in allPlaces" :key="index" :value="place">
-                      {{ place }}
+                    <option
+                      v-for="(place, index) in allPlaces"
+                      :key="index"
+                      :value="place.place_id"
+                    >
+                      {{ place.name }}
                     </option>
                   </select>
                 </div>
@@ -97,23 +101,18 @@
               :key="`find-${index}`"
               class="activity-card mb-4 p-4 bg-white rounded-2xl shadow"
             >
-              <div class="font-semibold">{{ record.records.sport }}</div>
+              <div class="font-semibold">{{ record.sport }}</div>
               <div class="text-sm text-gray-600 mt-3 flex flex-col">
-                運動種類: {{ record.records.sport }}<br />
-                地點: {{ record.records.place }}<br />
-                時間: {{ handleTimestamp(record.records.startTime) }} -
-                {{ handleTimestamp(record.records.endTime) }}
+                運動種類: {{ record.sport }}<br />
+                地點: {{ record.place.name }}<br />
+                時間: {{ handleTimestamp(record.start_time) }} -
+                {{ handleTimestamp(record.end_time) }}
                 <button
-                  v-if="
-                    chatChannelList.every(
-                      (channel) => channel.records.recordId !== record.records.recordId
-                    )
-                  "
+                  v-if="chatChannelList.every((channel) => channel.record_id !== record.record_id)"
                   class="text-red-500 text-sm w-fit mt-2"
                   @click="
-                    // TODO: stop event propagation
                     () => {
-                      handlePostJoinRecord(record.records.recordId);
+                      handlePostJoinRecord(record.record_id);
                     }
                   "
                 >
@@ -146,7 +145,7 @@
               () => {
                 router.push({
                   name: 'instant-messaging',
-                  query: { channelID: channel.records.recordId }
+                  params: { channel_id: channel.record_id }
                 });
               }
             "
@@ -154,43 +153,42 @@
             <div class="flex flex-col">
               <div class="font-semibold">
                 {{
-                  new Date(channel.records.startTime).getDate() + channel.records.place.name ||
-                  'Unnamed Channel'
+                  new Date(channel.start_time).getDate() + channel.place.name || 'Unnamed Channel'
                 }}
               </div>
               <div class="text-sm text-gray-600 mt-3 flex flex-col">
-                運動種類: {{ channel.records.sport }}<br />
-                地點: {{ channel.records.place.name }}<br />
-                時間: {{ handleTimestamp(channel.records.startTime) }} -
-                {{ handleTimestamp(channel.records.endTime) }}
-                <div>
+                運動種類: {{ channel.sport }}<br />
+                地點: {{ channel.place.name }}<br />
+                時間: {{ handleTimestamp(channel.start_time) }} -
+                {{ handleTimestamp(channel.end_time) }}
+                <div class="flex gap-2">
                   <button
-                    class="text-red-500 text-sm w-fit mt-2"
+                    v-if="channel.organizer_id === '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'"
+                    class="text-white bg-pink-500 text-sm w-fit mt-2 px-2 py-1 rounded"
                     @click="
                       async () => {
                         const params = {
-                          userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-                          recordId: channel.records.recordId
-                        };
-                        await deleteJoinRecord(params);
-                      }
-                    "
-                  >
-                    退出
-                  </button>
-                  <button
-                    v-if="channel.records.organizerId === '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'"
-                    class="text-white bg-primary-700 text-sm w-fit mt-2"
-                    @click="
-                      async () => {
-                        const params = {
-                          recordId: channel.records.recordId
+                          recordId: channel.record_id
                         };
                         await deleteRecord(params);
                       }
                     "
                   >
                     解散
+                  </button>
+                  <button
+                    class="bg-primary-500 text-sm w-fit mt-2 px-2 py-1 rounded text-white"
+                    @click="
+                      async () => {
+                        const params = {
+                          userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+                          recordId: channel.record_id
+                        };
+                        await deleteJoinRecord(params);
+                      }
+                    "
+                  >
+                    退出
                   </button>
                 </div>
               </div>
@@ -282,30 +280,24 @@ const tabs = [
 ];
 
 interface RecordInfo {
-  records: {
-    recordId: string;
-    place: {
-      placeId: number;
-      name: string;
-    };
-    sport: string;
-    startTime: string;
-    endTime: string;
-    capacity: number;
-    status: string;
-    organizerId: string;
+  record_id: string;
+  place: {
+    place_id: string;
+    name: string;
   };
+  sport: string;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  status: string;
+  organizer_id: string;
 }
 
 // 靜態資料
-const allSports = ref<
-  Array<{
-    sport: string;
-  }>
->([]);
+const allSports = ref<string[]>([]);
 const allPlaces = ref<
   Array<{
-    placeId: number;
+    place_id: string;
     name: string;
   }>
 >([]);
@@ -334,10 +326,9 @@ const searchRecords = () => {
   const recordInfos = allRecords;
 
   records.value = recordInfos.filter((r) => {
-    const matchSport = !selectedSport.value || r.records.sport === selectedSport.value;
-    const matchPlace = !selectedPlace.value || r.records.place.name === selectedPlace.value;
-    const matchTime =
-      !selectedTime.value || new Date(r.records.startTime) >= new Date(selectedTime.value);
+    const matchSport = !selectedSport.value || r.sport === selectedSport.value;
+    const matchPlace = !selectedPlace.value || r.place.name === selectedPlace.value;
+    const matchTime = !selectedTime.value || new Date(r.start_time) >= new Date(selectedTime.value);
     return matchSport && matchPlace && matchTime;
   });
 };
@@ -348,6 +339,19 @@ const currentTab = ref<'find' | 'joined'>('find');
 
 const handleSportChange = async (sport: string) => {
   selectedSport.value = sport;
+  const placeRes = (await getPlaceList({ sport: sport })) as {
+    places: Array<{
+      place_id: string;
+      name: string;
+    }>;
+  };
+  if (Array.isArray(placeRes.places)) {
+    allPlaces.value = placeRes.places;
+  } else if (placeRes && Array.isArray(placeRes.places)) {
+    allPlaces.value = placeRes.places;
+  } else {
+    allPlaces.value = [];
+  }
 };
 
 const handlePlaceChange = async (place: string) => {
@@ -377,7 +381,6 @@ const handlePlaceChange = async (place: string) => {
 const handleSwitchTab = async (tab: 'find' | 'joined') => {
   currentTab.value = tab;
   if (tab === 'joined') {
-    // normalize various response shapes from getUserRecord to an array of RecordInfo
     const params = {
       userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
     };
@@ -405,16 +408,22 @@ const handleTimestamp = (timestamp: string) => {
 
 onMounted(async () => {
   // Normalize getPlaceList response to always be an array to match `allPlaces` type
-  const placeRes = (await getPlaceList({ sport: selectedSport.value })) as any;
-  if (Array.isArray(placeRes)) {
-    allPlaces.value = placeRes;
-  } else if (placeRes && Array.isArray(placeRes.records)) {
-    allPlaces.value = placeRes.records;
+  const placeRes = (await getPlaceList({ sport: selectedSport.value })) as {
+    places: Array<{
+      place_id: string;
+      name: string;
+    }>;
+  };
+  console.log('Place Response:', placeRes);
+  if (Array.isArray(placeRes.places)) {
+    allPlaces.value = placeRes.places;
+  } else if (placeRes && Array.isArray(placeRes.places)) {
+    allPlaces.value = placeRes.places;
   } else {
-    allPlaces.value = placeRes ? [placeRes] : [];
+    allPlaces.value = [];
   }
 
-  allSports.value = (await getSportList()) as any;
+  allSports.value = (await getSportList()).sports as Array<string>;
   searchRecords();
   const params = {
     place: selectedPlace.value,

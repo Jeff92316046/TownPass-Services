@@ -118,7 +118,7 @@ let client: MqttClient | null = null;
 const route = useRoute();
 const channelId = ref<string>('');
 onMounted(() => {
-  channelId.value = route.params.channelID as string;
+  channelId.value = route.params.channel_id as string;
 });
 
 // === 格式化時間 ===
@@ -132,7 +132,7 @@ const fetchMessageHistory = async () => {
   if (!channelId.value) return;
 
   try {
-    const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/message/history/`, {
+    const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/message/history/`, {
       params: { channel_id: channelId.value }
     });
 

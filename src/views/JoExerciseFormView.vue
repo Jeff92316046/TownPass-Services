@@ -15,11 +15,11 @@
       <div v-if="sportType !== ''" class="flex flex-col gap-4">
         <label class="font-semibold">場地訊息</label>
         <BaseSelect
-          v-model="location as string"
+          v-model="selectedLocation"
           required
           :trigger-validate="triggerValidate"
           :options="locationOptions"
-          selectId="location"
+          selectId="selectedLocation"
           defaultSelected="請選擇場地訊息"
         />
         <label class="font-semibold">活動人數</label>
@@ -79,22 +79,33 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import BaseButton from '@/components/atoms/BaseButton.vue';
 import BaseSelect from '@/components/atoms/BaseSelect.vue';
 import DatePicker from '@/components/molecules/DatePicker.vue';
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
 import getSportList from '../api/getSportList';
 import postRecord from '../api/postRecord';
+import getPlaceList from '@/api/getPlaceList';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const triggerValidate = ref(false);
 
 const sportType = ref('');
-const location = ref<string>('');
+const selectedLocation = ref<string>('');
 const participants = ref<string>('');
-const activityDate = ref(new Date().toISOString().split('T')[0]);
-const startTime = ref('');
-const endTime = ref('');
+
+const now = new Date();
+const pad = (n: number) => n.toString().padStart(2, '0');
+const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(
+  now.getHours()
+)}:${pad(now.getMinutes())}`;
+
+const activityDate = ref(localStr.split('T')[0]);
+const startTime = ref(localStr.split('T')[1]);
+const endTime = ref(localStr.split('T')[1]);
 
 const sportOptions = ref<Array<{ label: string; value: string }>>([]);
 
@@ -106,9 +117,9 @@ const locationOptions = ref<Array<{ label: string; value: string }>>([
 ]);
 
 const participantsOptions = ref<Array<{ label: string; value: string }>>(
-  Array.from({ length: 20 }, (_, i) => ({
-    label: (i + 1).toString(),
-    value: (i + 1).toString()
+  Array.from({ length: 11 }, (_, i) => ({
+    label: (i + 2).toString(),
+    value: (i + 2).toString()
   }))
 );
 
@@ -138,12 +149,46 @@ const isStartTimeEarlierThanCurrentTime = () => {
   return activityDateTime < now;
 };
 
-const handleSubmit = () => {
+watch(sportType, async (newSportType) => {
+  if (newSportType !== '') {
+    const response = (await getPlaceList({ sport: newSportType })) as {
+      places: Array<{
+        place_id: string;
+        name: string;
+      }>;
+    };
+    console.log('Fetched place list for sport type:', newSportType, response);
+    locationOptions.value = response.places.map((place) => {
+      console.log('Processing place:', place);
+      return {
+        label: place.name,
+        value: place.place_id
+      };
+    });
+    console.log('Updated location options:', locationOptions.value);
+    selectedLocation.value = '';
+  }
+});
+
+watch(selectedLocation, (newLocation, oldLocation) => {
+  console.log('Selected Location changed:', oldLocation);
+  console.log('New Location value:', newLocation);
+});
+
+const handleSubmit = async () => {
   triggerValidate.value = true;
+  console.log('Submitting with values:', {
+    sportType: sportType.value,
+    location: selectedLocation.value,
+    participants: participants.value,
+    activityDate: activityDate.value,
+    startTime: startTime.value,
+    endTime: endTime.value
+  });
 
   if (
     sportType.value &&
-    location.value &&
+    selectedLocation.value &&
     participants.value &&
     activityDate.value &&
     startTime.value &&
@@ -159,36 +204,35 @@ const handleSubmit = () => {
       alert('開始時間不可早於目前時間');
       return;
     }
-    postRecord({
-      userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-      placeId: parseInt(location.value),
-      sport: sportType.value,
-      startTime: `${activityDate.value}T${startTime.value}:00`,
-      endTime: `${activityDate.value}T${endTime.value}:00`,
-      capacity: parseInt(participants.value)
-    })
-      .then((response) => {
-        console.log('Record posted successfully:', response);
+    try {
+      await postRecord({
+        user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+        place_id: selectedLocation.value,
+        sport: sportType.value,
+        start_time: `${activityDate.value}T${startTime.value}:00`,
+        end_time: `${activityDate.value}T${endTime.value}:00`,
+        capacity: parseInt(participants.value)
       })
-      .catch((error) => {
-        console.error('Error posting record:', error);
-      });
-
-    sportType.value = '';
-    location.value = '';
-    participants.value = '';
-    activityDate.value = '';
-    startTime.value = '';
-    endTime.value = '';
-    triggerValidate.value = false;
+        .then((response) => {
+          console.log('Record posted successfully:', response);
+        })
+        .catch((error) => {
+          console.error('Error posting record:', error);
+        });
+    } catch (error) {
+      console.error('Unexpected error posting record:', error);
+    }
   }
-  activityDate.value = new Date().toISOString().split('T')[0];
+  activityDate.value = localStr.split('T')[0];
+  router.push('/jo-exercise');
 };
 
 onMounted(async () => {
   try {
     const response = await getSportList();
-    const sportList: string[] = Array.isArray(response) ? response : [];
+    console.log('Fetched sport list:', response);
+    const sportList = response.sports;
+    console.log('Processed sport list:', sportList);
     sportOptions.value = sportList.map((sport) => ({
       label: sport,
       value: sport

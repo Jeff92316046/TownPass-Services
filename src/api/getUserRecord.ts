@@ -20,27 +20,28 @@ interface UserRecordResponse {
 
 const getUserRecord = async (params: UserRecordRequest): Promise<UserRecordResponse> => {
   try {
-    const query = new URLSearchParams();
-    if (params.userId) query.append('userId', params.userId);
     const requestOptions: RequestInit = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: params.userId
+        Authorization: 'Bearer ' + params.userId
       }
     };
     const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL + `/records?${query.toString()}`,
+      import.meta.env.VITE_BASE_URL + `/record/get/` + params.userId,
       requestOptions
     );
+    console.log('Response received:', response);
     if (!response.ok) {
       throw new Error('HTTP error!');
     }
     const data = await response.json();
+    console.log('Fetched user records:', data);
     const res = {
       ...data,
       organizerId: ''
     };
+    console.log('Processed user records:', res);
     return res;
   } catch (error) {
     console.error('Error fetching all records:', error);

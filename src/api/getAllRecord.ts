@@ -6,45 +6,38 @@ interface AllRecordRequest {
 
 interface RecordResponse {
   records: Array<{
-    recordId: string;
+    record_id: string;
     place: {
-      placeId: number;
+      place_id: number;
       name: string;
     };
     sport: string;
-    startTime: string;
-    endTime: string;
+    start_time: string;
+    end_time: string;
     capacity: number;
     status: string;
-    organizerId: string;
+    organizer_id: string;
   }>;
 }
 
 const getAllRecord = async (params: AllRecordRequest): Promise<RecordResponse> => {
   try {
-    const query = new URLSearchParams();
-    if (params.place) query.append('place', params.place);
-    if (params.sport) query.append('sport', params.sport);
-    if (params.startTime) query.append('startTime', params.startTime);
     const requestOptions: RequestInit = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       }
     };
-    const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL + `/records?${query.toString()}`,
-      requestOptions
-    );
+    const response = await fetch(import.meta.env.VITE_BASE_URL + '/record/all', requestOptions);
     if (!response.ok) {
       throw new Error('HTTP error!');
     }
     const data = await response.json();
     const res = {
       ...data,
-      organizerId: ''
+      organizer_id: ''
     };
-    return res;
+    return res.records;
   } catch (error) {
     console.error('Error fetching all records:', error);
     throw error;

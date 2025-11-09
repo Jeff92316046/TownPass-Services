@@ -81,7 +81,7 @@ const router = createRouter({
       component: JoExerciseChannelListView
     },
     {
-      path: '/jo-exercise/instant-messaging/:channelID',
+      path: '/jo-exercise/instant-messaging/:channel_id',
       name: 'instant-messaging',
       meta: {
         title: 'JoExercise 即時通訊'
