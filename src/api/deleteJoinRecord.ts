@@ -1,6 +1,6 @@
 interface DeleteJoinRecordRequest {
-  recordId: string;
-  userId: string;
+  record_id: string;
+  user_id: string;
 }
 
 interface DeleteJoinRecordResponse {
@@ -8,16 +8,21 @@ interface DeleteJoinRecordResponse {
 }
 
 const deleteJoinRecord = async (
-  request: DeleteJoinRecordRequest
+  params: DeleteJoinRecordRequest
 ): Promise<DeleteJoinRecordResponse> => {
   try {
+    console.log('Deleting Join Record with params:', params);
     const response = await fetch(
-      import.meta.env.VITE_BASE_URL + '/record/leave/' + request.recordId,
+      import.meta.env.VITE_BASE_URL +
+        '/record/leave/' +
+        params.record_id +
+        '?user_id=' +
+        params.user_id,
       {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + request.userId
+          Authorization: 'Bearer ' + params.user_id
         }
       }
     );

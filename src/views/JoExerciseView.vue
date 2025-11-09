@@ -158,28 +158,13 @@
                   <button
                     v-if="channel.organizer_id === '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'"
                     class="text-white bg-pink-500 text-sm w-fit mt-2 px-2 py-1 rounded"
-                    @click="
-                      async () => {
-                        const params = {
-                          record_id: channel.record_id
-                        };
-                        await deleteRecord(params);
-                      }
-                    "
+                    @click="handleDisband(channel)"
                   >
                     解散
                   </button>
                   <button
                     class="bg-primary-500 text-sm w-fit mt-2 px-2 py-1 rounded text-white"
-                    @click="
-                      async () => {
-                        const params = {
-                          userId: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-                          recordId: channel.record_id
-                        };
-                        await deleteJoinRecord(params);
-                      }
-                    "
+                    @click="async () => handleQuit(channel)"
                   >
                     退出
                   </button>
@@ -259,6 +244,43 @@ import deleteRecord from '../api/deleteRecord';
 import getPlaceList from '../api/getPlaceList';
 import getSportList from '../api/getSportList';
 import postNearByCompute from '../api/postNearByCompute';
+
+const handleDisband = async (channel: { record_id: string }) => {
+  const params = {
+    record_id: channel.record_id
+  };
+  await deleteRecord(params);
+  const params2 = {
+    user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
+  };
+  const res = (await getUserRecord(params2)) as any;
+  if (Array.isArray(res)) {
+    chatChannelList.value = res;
+  } else if (res && Array.isArray(res.records)) {
+    chatChannelList.value = res.records;
+  } else {
+    chatChannelList.value = res ? [res] : [];
+  }
+};
+
+const handleQuit = async (channel: { record_id: string }) => {
+  const params = {
+    user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
+    record_id: channel.record_id
+  };
+  await deleteJoinRecord(params);
+  const params2 = {
+    user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
+  };
+  const res = (await getUserRecord(params2)) as any;
+  if (Array.isArray(res)) {
+    chatChannelList.value = res;
+  } else if (res && Array.isArray(res.records)) {
+    chatChannelList.value = res.records;
+  } else {
+    chatChannelList.value = res ? [res] : [];
+  }
+};
 
 const router = useRouter();
 
@@ -445,13 +467,13 @@ onMounted(async () => {
   }
 });
 
-const handlePostJoinRecord = async (recordId: string) => {
+const handlePostJoinRecord = async (record_id: string) => {
   try {
     await postJoinRecord({
       user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-      record_id: recordId
+      record_id: record_id
     });
-    console.log('Successfully joined record:', recordId);
+    console.log('Successfully joined record:', record_id);
     const res = (await getUserRecord({
       user_id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250'
     })) as any;
