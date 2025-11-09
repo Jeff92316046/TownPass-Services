@@ -137,18 +137,10 @@
         </div>
 
         <div v-else key="joined" class="overflow-y-auto px-4 pb-20">
-          <button
+          <div
             v-for="(channel, index) in chatChannelList"
             :key="`joined-${index}`"
             class="activity-card mb-4 p-4 flex flex-row justify-between items-center text-left w-full"
-            @click="
-              () => {
-                router.push({
-                  name: 'instant-messaging',
-                  params: { channel_id: channel.record_id }
-                });
-              }
-            "
           >
             <div class="flex flex-col">
               <div class="font-semibold">
@@ -194,8 +186,20 @@
                 </div>
               </div>
             </div>
-            <img :src="ChatIcon" alt="Chat Icon" class="w-20 h-20 cursor-pointer" />
-          </button>
+            <img
+              :src="ChatIcon"
+              alt="Chat Icon"
+              class="w-20 h-20 cursor-pointer"
+              @click="
+                () => {
+                  router.push({
+                    name: 'instant-messaging',
+                    params: { channel_id: channel.record_id }
+                  });
+                }
+              "
+            />
+          </div>
         </div>
       </transition>
     </div>

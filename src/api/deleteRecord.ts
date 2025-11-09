@@ -9,7 +9,7 @@ interface DeleteRecordResponse {
 const deleteRecord = async (params: DeleteRecordRequest): Promise<DeleteRecordResponse> => {
   try {
     const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL + '/record/delete/' + params.recordId,
+      import.meta.env.VITE_BASE_URL + '/record/delete/' + params.recordId,
       {
         method: 'DELETE',
         headers: {

@@ -11,7 +11,7 @@ interface JoinRecordResponse {
 const postJoinRecord = async (params: JoinRecordRequest): Promise<JoinRecordResponse> => {
   try {
     const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL + '/record/join/' + params.recordId,
+      import.meta.env.VITE_BASE_URL + '/record/join/' + params.recordId,
       {
         method: 'POST',
         headers: {

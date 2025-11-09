@@ -12,7 +12,7 @@ const deleteJoinRecord = async (
 ): Promise<DeleteJoinRecordResponse> => {
   try {
     const response = await fetch(
-      import.meta.env.VITE_API_BASE_URL + '/record/leave/' + request.recordId,
+      import.meta.env.VITE_BASE_URL + '/record/leave/' + request.recordId,
       {
         method: 'DELETE',
         headers: {

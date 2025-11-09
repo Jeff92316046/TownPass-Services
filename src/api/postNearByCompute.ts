@@ -12,7 +12,7 @@ const postNearByCompute = async (
   params: PostNearByComputeRequest
 ): Promise<PostNearByComputeResponse> => {
   try {
-    const response = await fetch(import.meta.env.VITE_API_BASE_URL + '/compute/', {
+    const response = await fetch(import.meta.env.VITE_BASE_URL + '/compute/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
