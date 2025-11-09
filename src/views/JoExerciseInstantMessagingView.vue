@@ -1,12 +1,15 @@
 <template>
   <div class="flex flex-col h-screen">
     <FixedTitleSection
-      :title="props.activityName"
+      :title="activityName"
       class="bg-primary-400 text-white text-lg font-semibold py-2"
     />
 
     <!-- 訊息列表 -->
-    <div class="flex-1 bg-gray-50 p-4 overflow-y-auto mt-12">
+    <div
+      ref="messageContainer"
+      class="flex-1 bg-gray-50 p-4 overflow-y-auto mt-12 flex flex-col justify-end"
+    >
       <div v-for="(msg, index) in messages" :key="index" class="mb-2">
         <div
           class="flex flex-col"
@@ -61,6 +64,11 @@ import BaseButton from '../components/atoms/BaseButton.vue';
 import FixedTitleSection from '@/components/molecules/FixedTitleSection.vue';
 import { uuidToAnimal } from '@/utils/userid-to-name';
 import axios from 'axios';
+
+import { watch, nextTick } from 'vue';
+
+const messageContainer = ref<HTMLElement | null>(null);
+
 // === 環境變數 ===
 const MQTT_BROKER: string = import.meta.env.VITE_MQTT_BROKER;
 const MQTT_WS_PORT: number = 9001;
@@ -68,52 +76,32 @@ const MQTT_USR_NAME: string = import.meta.env.VITE_MQTT_USR_NAME;
 const MQTT_USR_PWD: string = import.meta.env.VITE_MQTT_USR_PWD;
 
 // === Props ===
-const props = withDefaults(
-  defineProps<{
-    activityName: string;
-    messages?: Array<{ sender: string; text: string; timestamp?: string }>;
-    userData: {
-      name: string;
-      status: number;
-      reasonPhrase: string;
-      data: {
-        id: string;
-        account: string;
-        username: string;
-        realName: string;
-      };
-      extra: null | any;
-      version: string;
-    };
-    otherUserData: { name: string; imageUrl: string }[];
-  }>(),
-  {
-    activityName: '2025-11-08 羽球場',
-    messages: () => [],
-    userData: () => ({
-      name: 'TP_SUCCESS',
-      status: 0,
-      reasonPhrase: '',
-      data: {
-        id: 'a1b2c3d4-e5f6-7890-1234-567890bc1345',
-        account: 'user1',
-        username: 'Wesley',
-        realName: '金大森'
-      },
-      extra: null,
-      version: 'v1.0.0'
-    }),
-    otherUserData: () => []
-  }
-);
+const activityName = ref('2025-11-08 羽球場');
+const userData = ref({
+  name: 'TP_SUCCESS',
+  status: 0,
+  reasonPhrase: '',
+  data: {
+    id: 'a1b2c3d4-e5f6-7890-1234-567890bc1345',
+    account: 'user1',
+    username: 'Wesley',
+    realName: '金大森'
+  },
+  extra: null,
+  version: 'v1.0.0'
+});
 
 // === 狀態 ===
+const messages = ref<Array<{ sender: string; text: string; timestamp?: string }>>([]);
 const textMessage = ref('');
-const messages = ref<Array<{ sender: string; text: string; timestamp?: string }>>(
-  props.messages ?? []
-);
 let client: MqttClient | null = null;
 
+// 當 messages 有變化時自動滾到底
+watch(messages, async () => {
+  await nextTick();
+  const el = messageContainer.value;
+  if (el) el.scrollTop = el.scrollHeight;
+});
 // === 從 URL 拿 channelId ===
 const route = useRoute();
 const channelId = ref<string>('');
@@ -179,7 +167,7 @@ onMounted(async () => {
         const msg = JSON.parse(payload.toString()) as { sender: string; text: string };
 
         // 過濾掉自己發送的訊息
-        if (msg.sender === props.userData.data.id) return;
+        if (msg.sender === userData.value.data.id) return;
 
         messages.value.push({
           ...msg,
@@ -206,7 +194,7 @@ const handleSendMessage = () => {
   if (!textMessage.value.trim() || !client?.connected || !channelId.value) return;
 
   const msg = {
-    sender: props.userData.data.id,
+    sender: userData.value.data.id,
     text: textMessage.value
   };
 

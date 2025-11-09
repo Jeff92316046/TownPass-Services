@@ -153,7 +153,8 @@
             <div class="flex flex-col">
               <div class="font-semibold">
                 {{
-                  new Date(channel.start_time).getDate() + channel.place.name || 'Unnamed Channel'
+                  new Date(channel.start_time).toLocaleString() + channel.place.name ||
+                  'Unnamed Channel'
                 }}
               </div>
               <div class="text-sm text-gray-600 mt-3 flex flex-col">
